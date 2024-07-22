@@ -41,32 +41,15 @@ const uploadReport = async (req, res) => {
     listofreports.push(id);
     patientDetails.reportsList = listofreports;
     patientDetails.save();
-    const safety_settings = [
-        {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-    ];
     const function1 = async () => {
         const apiKey = process.env.API_KEY_1;
         const genAI = new GoogleGenerativeAI(apiKey);
 
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-pro',
+            model: 'gemini-1.5-flash',
             systemInstruction:
                 'If input is not related to medical diagnosis must respond with only {\n"medicalQuery":"no"\n}',
+                safetySettings:safety_settings
         });
         const generationConfig = {
             temperature: 0,
@@ -78,7 +61,6 @@ const uploadReport = async (req, res) => {
 
         const chatSession = model.startChat({
             generationConfig,
-            safety_settings,
             history: [
                 {
                     role: 'user',
@@ -174,9 +156,10 @@ const uploadReport = async (req, res) => {
         const genAI = new GoogleGenerativeAI(apiKey);
 
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-pro',
+            model: 'gemini-1.5-flash',
             systemInstruction:
                 'you are a medical reports analyzer which analyze the reports and give output in a specific format where the  Keys are summary of analysis, Date of report , Precautions, Possible disease risks, severity rating out of 10, which specialist(one or less) is needed. the format of output should be in:  Short-Analysis:String,Precautions:Array,Possible-disease risks:Array,Severity:int,specialist:String as json format\n',
+                safetySettings:safety_settings
         });
         medobject = medobject["chronic conditions"] = await patient.findOne({ _id: pid }).select({ 'chronics': 1, '-_id': 1 });
         const generationConfig = {
@@ -188,7 +171,6 @@ const uploadReport = async (req, res) => {
         };
         const chatSession = model.startChat({
             generationConfig,
-            safety_settings,
             history: [
                 {
                     role: 'user',
@@ -234,7 +216,8 @@ const uploadReport = async (req, res) => {
         const genAI = new GoogleGenerativeAI(apiKey);
 
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-pro',
+            model: 'gemini-1.5-flash',
+            safetySettings:safety_settings
         });
 
         const generationConfig = {
@@ -246,7 +229,6 @@ const uploadReport = async (req, res) => {
         };
         const chatSession = model.startChat({
             generationConfig,
-            safety_settings,
             history: [
                 {
                     role: 'user',
@@ -302,9 +284,10 @@ const getParameters = async (req, res) => {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-1.5-flash',
         systemInstruction:
             'If input is not related to medical diagnosis must respond with only {\n"medicalQuery":"no"\n}',
+            safetySettings:safety_settings
     });
     const generationConfig = {
         temperature: 0,
@@ -315,7 +298,6 @@ const getParameters = async (req, res) => {
     };
     const chatSession = model.startChat({
         generationConfig,
-        safety_settings,
         history: [
             {
                 role: 'user',
@@ -409,9 +391,10 @@ const analysis = async (req, res) => {
     const apiKey = process.env.API_KEY_2;
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-1.5-flash',
         systemInstruction:
             'you are a medical reports analyzer which analyze the reports and give output in a specific format where the  Keys are summary of analysis, Date of report , Precautions, Possible disease risks, severity rating out of 10, which specialist(one or less) is needed. the format of output should be in:  Short-Analysis:String,Precautions:Array,Possible-disease risks:Array,Severity:int,specialist:String as json format\n',
+            safetySettings:safety_settings
     });
     jsonObject["chronic conditions"] = await patient.findOne({ _id: patientId }).select({ 'chronics': 1, '-_id': 1 });
     
@@ -424,7 +407,6 @@ const analysis = async (req, res) => {
     };
     const chatSession = model.startChat({
         generationConfig,
-        safety_settings,
         history: [
             {
                 role: 'user',
@@ -489,6 +471,50 @@ const analysis = async (req, res) => {
 
 
 }
+const apiKey = "AIzaSyAsP6FIwHahsY4ShpkIDu-Vl08DAuKeJRA";  // Replace with your actual API key
+
+const genAI = new GoogleGenerativeAI(apiKey);
+
+const model = genAI.getGenerativeModel({
+  model: 'gemini-1.5-flash',
+  systemInstruction: "Respond only to medical questions with brief, accurate answers that fit in a standard chatbot window. Provide factual information based on established medical knowledge, focusing on symptoms, conditions, treatments, and general health advice. Do not offer personalized diagnoses or treatment plans. For non-medical queries or requests for alternative treatments, politely explain that you're a medical information chatbot and can't assist with those topics. Always encourage users to consult a healthcare professional for personalized medical advice, especially for serious concerns. Keep responses concise, clear, and easy to read.",
+
+});
+
+const generationConfig = {
+  temperature: 0.0,
+  topP: 0.9,
+  topK: 50,
+  maxOutputTokens: 50,
+  responseMimeType: 'text/plain',
+};
+
+
+
+const chatbot=async (req, res) => {
+    const userMessage = req.body.message;
+   // console.log('User Message:', userMessage);
+  
+    try {
+      const chatSession = await model.startChat({
+        generationConfig,
+        history: [],
+      });
+  
+      const result = await chatSession.sendMessage(userMessage);
+      let botResponse = result.response.text();
+      
+     
+      botResponse= botResponse.replace(/\*\*/g, ""); // Remove Markdown bold markers
+      botResponse = botResponse.replace(/\*/g, "");
+     // console.log('Bot Response:', botResponseString);
+  
+      res.json({ reply: botResponse });
+    } catch (error) {
+      console.error('Error communicating with Gemini API:', error);
+      res.status(500).json({ error: 'Failed to communicate with Gemini API' });
+}
+}
 
 
 
@@ -499,4 +525,6 @@ const analysis = async (req, res) => {
 
 
 
-module.exports = { uploadReport, getParameters, analysis }
+
+
+module.exports = { uploadReport, getParameters, analysis,chatbot }

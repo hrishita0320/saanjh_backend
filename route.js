@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const {getReport, getPatient, setPatient, getPatients, getOldageHomeInfo,getDates,savePrecautions,getPrevReports,getreports,editPatient, getreportsdetails,updatedoctornotes} = require('./controllers/get_set')
-const {uploadReport,getParameters,analysis} = require('./controllers/LLM')
+const {uploadReport,getParameters,analysis,chatbot} = require('./controllers/LLM')
 const {uploadpdf,pdfid,pdfparse,reciver}=require('./controllers/pdfs')
 router.get('/getreport/:id', getReport)
 router.post('/setPatient',setPatient)
@@ -22,5 +22,6 @@ router.post('/upload', uploadReport)
  router.get('/getreportdetails',getreportsdetails)
  router.post("/updateDoctorNotes/:id",updatedoctornotes)
  router.get('/files/:id',pdfid);
+ router.post('/chatbot',chatbot)
 
 module.exports = router
